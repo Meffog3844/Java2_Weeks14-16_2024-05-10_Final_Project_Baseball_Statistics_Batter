@@ -118,6 +118,8 @@ public class App extends Application {
         grid.add(optionBox, 0, 0, 3, 1);
         
         enterDataButton.setOnAction(event -> enterDataButtonClicked());
+        viewGameReportButton.setOnAction(event -> generateGameReportDialog());
+
         
         // exit button
         Button exitButton = new Button("Exit");
@@ -304,6 +306,38 @@ public class App extends Application {
         sacrificeFliesField.setText("0");
         leftOnBaseField.setText("0");
     }
+
+    // Method to bring the user to the Generate Game Report Menu
+    private void generateGameReportDialog() {
+    GridPane reportGrid = new GridPane();
+    reportGrid.setAlignment(Pos.CENTER);
+    reportGrid.setPadding(new Insets(10, 10, 10, 10));
+    reportGrid.setHgap(10);
+    reportGrid.setVgap(10);
+
+    Label gameNumberReportLabel = new Label("Game #:");
+    TextField gameNumberReportField = new TextField();
+
+    Button generateReportButton = new Button("Generate Game Report");
+    generateReportButton.setOnAction(event -> {
+        // Implement the logic to generate the game report based on game number
+        int gameNumber = Integer.parseInt(gameNumberReportField.getText());
+        // Call the method to generate the report
+        // e.g., generateGameReport(gameNumber);
+    });
+
+    Button returnButton = new Button("Return");
+    returnButton.setOnAction(event -> returnButtonClicked());
+
+    reportGrid.add(gameNumberReportLabel, 0, 0);
+    reportGrid.add(gameNumberReportField, 1, 0);
+    reportGrid.add(generateReportButton, 0, 1);
+    reportGrid.add(returnButton, 1, 1);
+
+    Scene reportScene = new Scene(reportGrid);
+    primaryStage.setScene(reportScene);
+}
+
     
     // function to end the program
     private void exitButtonClicked() {
