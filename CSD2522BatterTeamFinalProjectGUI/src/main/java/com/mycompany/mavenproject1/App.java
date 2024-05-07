@@ -29,6 +29,8 @@ Luke Dawson - 5/6/24 - added error handling for data integrity
 Terry Pescosolido - 5/6/24 - enahnced error-checking in submitButtonClicked
 Gavin Mefford-Gibbins - 5/7/2024 - Polished the "rough" game report a little bit to line it up
 Gavin Mefford-Gibbins - 5/7/2024 - Added Functionality to the Create file button on single game report page
+Gavin Mefford-Gibbins - 5/7/2024 - fixed File write to write both types of single game report 
+    and fixed spacing issue caused by long names
 */
 
 package com.mycompany.mavenproject1;
@@ -374,6 +376,7 @@ public class App extends Application {
     viewGameReportGrid.setPadding(new Insets(25, 25, 25, 25));
     viewGameReportGrid.setHgap(0);
     viewGameReportGrid.setVgap(5);
+    
 
     VBox topVBox = new VBox(20);
     HBox gameReportTopBox = new HBox(20);
@@ -409,7 +412,7 @@ public class App extends Application {
     createFileButton.setOnAction(event -> {
     int selectedGameNumber = Integer.parseInt(gameComboBox.getValue().split(" ")[1]);
     try {
-        writeDetailedReportToFile(selectedGameNumber);
+        writeReportsToFile(selectedGameNumber);
         // Optionally, notify the user that the file was successfully created
         System.out.println("Report file created successfully!");
     } catch (IOException e) {
@@ -532,47 +535,85 @@ public class App extends Application {
     primaryStage.setScene(enterGameScene);
 }
     
-private void writeDetailedReportToFile(int gameNumber) throws IOException {
-    // Specify the output file name
-    String fileName = "GameReport_" + gameNumber + ".txt";
-    try (FileWriter writer = new FileWriter(fileName)) {
-        // Write the headers
+private void writeReportsToFile(int gameNumber) throws IOException {
+    // Find the game with the specified game number
+    Game game = null;
+    for (Game g : baseball_stats_db.getGames()) {
+        if (g.getGameNumber() == gameNumber) {
+            game = g;
+            break;
+        }
+    }
+
+    if (game == null) {
+        System.out.println("Game not found!");
+        return; // Exit if no game is found
+    }
+
+    // Detailed report file name, matching the ComboBox entry
+    String detailedFileName = "Game " + game.getGameNumber() + " - " + game.getGameDate() + " - " + game.getGameOpponentName() + "_Detailed" + ".txt";
+    // Simple report file name
+    String simpleFileName = "Game " + game.getGameNumber() + " - " + game.getGameDate() + " - " + game.getGameOpponentName() + "_Simple" + ".txt";
+
+    // Detailed report
+    try (FileWriter detailedWriter = new FileWriter(detailedFileName)) {
+        String headerFormat = "%-5s\t%-20s\t%-5s\t%-3s\t%-3s\t%-3s\t%-3s\t%-3s\t%-3s\t%-4s\t%-3s\t%-6s\t%-3s\t%-3s\t%-3s\t%-4s\t%-6s\t%-3s\t%-3s\t%-7s\t%-4s\n";
         String[] headers = {
             "p#", "Player", "Avg", "AB", "R", "H", "2B", "3B", "HR", "RBI", "TB", "SLG%", "BB", "HP", "SO", "GDP", "OB%", "SF", "SH", "SB-Att", "LOB"
         };
-        writer.write(String.join("\t", headers) + "\n");
+        detailedWriter.write(String.format(headerFormat, (Object[]) headers));
 
-        // Write the data rows
+        String dataRowFormat = "%-5d\t%-20s\t%-5s\t%-3d\t%-3d\t%-3d\t%-3d\t%-3d\t%-3d\t%-4d\t%-3d\t%-6s\t%-3d\t%-3d\t%-3d\t%-4d\t%-6s\t%-3d\t%-3d\t%-7s\t%-4d\n";
         for (Batter batter : baseball_stats_db.getGamePlayerStats(gameNumber)) {
-            String[] batterStats = {
-                String.valueOf(batter.getPlayerNumber()),
+            detailedWriter.write(String.format(dataRowFormat,
+                batter.getPlayerNumber(),
                 batter.getPlayerName(),
                 batter.getBatterAVGFormatted(),
-                String.valueOf(batter.getBatterAB()),
-                String.valueOf(batter.getBatterRuns()),
-                String.valueOf(batter.getBatterHits()),
-                String.valueOf(batter.getBatter2B()),
-                String.valueOf(batter.getBatter3B()),
-                String.valueOf(batter.getBatterHR()),
-                String.valueOf(batter.getBatterRBI()),
-                String.valueOf(batter.getBatterTB()),
+                batter.getBatterAB(),
+                batter.getBatterRuns(),
+                batter.getBatterHits(),
+                batter.getBatter2B(),
+                batter.getBatter3B(),
+                batter.getBatterHR(),
+                batter.getBatterRBI(),
+                batter.getBatterTB(),
                 batter.getBatterSLGFormatted(),
-                String.valueOf(batter.getBatterBB()),
-                String.valueOf(batter.getBatterHP()),
-                String.valueOf(batter.getBatterSO()),
-                String.valueOf(batter.getBatterGDP()),
+                batter.getBatterBB(),
+                batter.getBatterHP(),
+                batter.getBatterSO(),
+                batter.getBatterGDP(),
                 batter.getBatterOBFormatted(),
-                String.valueOf(batter.getBatterSF()),
-                String.valueOf(batter.getBatterSH()),
+                batter.getBatterSF(),
+                batter.getBatterSH(),
                 batter.getBatterSBSBAFormatted(),
-                String.valueOf(batter.getBatterLOB())
-            };
+                batter.getBatterLOB()
+            ));
+        }
+    }
 
-            // Write each batter's stats, separated by tabs
-            writer.write(String.join("\t", batterStats) + "\n");
+    // Simple report
+    try (FileWriter simpleWriter = new FileWriter(simpleFileName)) {
+        String headerFormat = "%-20s\t%-3s\t%-3s\t%-3s\t%-4s\t%-3s\t%-3s\t%-4s\n";
+        String[] simpleHeaders = {"Player", "AB", "R", "H", "RBI", "BB", "SO", "LOB"};
+        simpleWriter.write(String.format(headerFormat, (Object[]) simpleHeaders));
+
+        String dataRowFormat = "%-20s\t%-3d\t%-3d\t%-3d\t%-4d\t%-3d\t%-3d\t%-4d\n";
+        for (Batter batter : baseball_stats_db.getGamePlayerStats(gameNumber)) {
+            simpleWriter.write(String.format(dataRowFormat,
+                batter.getPlayerName(),
+                batter.getBatterAB(),
+                batter.getBatterRuns(),
+                batter.getBatterHits(),
+                batter.getBatterRBI(),
+                batter.getBatterBB(),
+                batter.getBatterSO(),
+                batter.getBatterLOB()
+            ));
         }
     }
 }
+
+
 
     
     // when the user has all data entered, write the data to the database
